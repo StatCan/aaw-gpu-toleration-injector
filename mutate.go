@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"k8s.io/api/admission/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -23,6 +24,8 @@ func mutate(request v1beta1.AdmissionRequest) (v1beta1.AdmissionResponse, error)
 		return response, fmt.Errorf("unable to decode Pod %w", err)
 	}
 
+	log.Printf("Check pod for GPU request %s/%s", pod.Namespace, pod.Name)
+
 	// Check for a GPU
 	hasGPU := false
 	for _, container := range pod.Spec.Containers {
@@ -36,6 +39,8 @@ func mutate(request v1beta1.AdmissionRequest) (v1beta1.AdmissionResponse, error)
 	}
 
 	if hasGPU {
+		log.Printf("Found GPU request for %s/%s", pod.Namespace, pod.Name)
+
 		patch := v1beta1.PatchTypeJSONPatch
 		response.PatchType = &patch
 

@@ -78,5 +78,6 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
+	log.Println("Listening on :8443")
 	log.Fatal(s.ListenAndServeTLS("./certs/tls.crt", "./certs/tls.key"))
 }

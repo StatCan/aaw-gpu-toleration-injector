@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gpu-toleration-injector
+  namespace: daaas
+  labels:
+    apps.kubernetes.io/name: gpu-toleration-injector
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  name: gpu-toleration-injector-issuer
+  namespace: daaas
+  labels:
+    apps.kubernetes.io/name: gpu-toleration-injector
+spec:
+  selfSigned: {}
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: gpu-toleration-injector
+  namespace: daaas
+  labels:
+    apps.kubernetes.io/name: gpu-toleration-injector
+spec:
+  secretName: gpu-toleration-injector-tls
+  commonName: "gpu-toleration-injector.daaas.svc.cluster.local"
+  dnsNames:
+  - gpu-toleration-injector
+  - gpu-toleration-injector.daaas
+  - gpu-toleration-injector.daaas.svc
+  - gpu-toleration-injector.daaas.svc.cluster
+  isCA: true
+  duration: 8760h
+  issuerRef:
+    name: gpu-toleration-injector-issuer
+    kind: Issuer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-toleration-injector
+  namespace: daaas
+  labels:
+    apps.kubernetes.io/name: gpu-toleration-injector
+spec:
+  selector:
+    matchLabels:
+      apps.kubernetes.io/name: gpu-toleration-injector
+  template:
+    metadata:
+      labels:
+        apps.kubernetes.io/name: gpu-toleration-injector
+    spec:
+      serviceAccountName: gpu-toleration-injector
+      imagePullSecrets:
+        - name: k8scc01covidacr-registry-connection
+      containers:
+      - name: gpu-toleration-injector
+        image: k8scc01covidacr.azurecr.io/gpu-toleration-injector:dd7e608149021e79ae97bac99f89dbaceb670e11
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - name: https
+          containerPort: 8443
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: gpu-toleration-injector-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gpu-toleration-injector
+  namespace: daaas
+  labels:
+    apps.kubernetes.io/name: gpu-toleration-injector
+spec:
+  selector:
+    apps.kubernetes.io/name: gpu-toleration-injector
+  ports:
+  - name: https
+    port: 443
+    targetPort: 8443
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    certmanager.k8s.io/inject-ca-from: daaas/gpu-toleration-injector
+  labels:
+    apps.kubernetes.io/name: gpu-toleration-injector
+  name: gpu-toleration-injector
+webhooks:
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
+    service:
+      name: gpu-toleration-injector
+      namespace: daaas
+      path: /mutate
+      port: 443
+  failurePolicy: Ignore
+  name: gpu-toleration-injector.statcan.gc.ca
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    resources:
+    - pods
+    scope: '*'

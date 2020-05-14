@@ -6,7 +6,7 @@ metadata:
   labels:
     apps.kubernetes.io/name: gpu-toleration-injector
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Issuer
 metadata:
   name: gpu-toleration-injector-issuer
@@ -16,7 +16,7 @@ metadata:
 spec:
   selfSigned: {}
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   name: gpu-toleration-injector
@@ -94,7 +94,7 @@ apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:
-    certmanager.k8s.io/inject-ca-from: daaas/gpu-toleration-injector
+    cert-manager.io/inject-ca-from: daaas/gpu-toleration-injector
   labels:
     apps.kubernetes.io/name: gpu-toleration-injector
   name: gpu-toleration-injector

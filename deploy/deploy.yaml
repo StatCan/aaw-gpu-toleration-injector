@@ -52,6 +52,8 @@ spec:
     metadata:
       labels:
         apps.kubernetes.io/name: gpu-toleration-injector
+       annotations:
+        sidecar.istio.io/inject: 'false'
     spec:
       serviceAccountName: gpu-toleration-injector
       imagePullSecrets:
